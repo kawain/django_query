@@ -1,4 +1,3 @@
-from tqdm import tqdm
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_query.settings")
 
@@ -6,6 +5,9 @@ import django  # noqa
 from django.db.models.functions import Concat  # noqa
 from django.db.models import Count, TextField  # noqa
 from django.db.models import Q, Value  # noqa
+from tqdm import tqdm  # noqa
+import random  # noqa
+
 
 django.setup()
 
@@ -88,4 +90,159 @@ def f5():
         print("-" * 20)
 
 
-f5()
+def f6():
+    """適当な記事データを作成"""
+
+    with open("data.txt", encoding="utf-8") as f:
+        text = f.read()
+
+    text = text.replace("―", "")
+    text = text.replace("　", "")
+    text = text.replace("「", "")
+    text = text.replace("」", "")
+    text = text.replace("\r", "")
+    text = text.replace("\n", "")
+    text_list = text.split("。")
+
+    head = []
+    body = []
+
+    for v in text_list:
+        if len(v) > 20:
+            body.append(v)
+        else:
+            head.append(v)
+
+    # headをシャッフルしておく
+    random.shuffle(head)
+
+    # カテゴリとタグをあらかじめ取得して記憶しておく
+    cate_all = Category.objects.all()
+    tag_all = Tag.objects.all()
+
+    for v in tqdm(head):
+        if v == "":
+            continue
+
+        # カテゴリを一つランダムに選ぶ
+        cat = random.choice(cate_all)
+
+        # ランダムに複数のタグを選択
+        # 抽出数もランダム
+        r = random.randint(1, 5)
+        tags = random.sample(list(tag_all), r)
+
+        # ランダムに複数のbodyを選択
+        bodys = random.sample(body, r)
+
+        # 記事オブジェクト作成
+        obj = Article()
+        obj.cat = cat
+        obj.title = v
+        obj.content = "。\n".join(bodys) + "。"
+        obj.save()
+
+        # 先にsaveする
+        for t in tags:
+            # タグの追加方法
+            obj.tags.add(t)
+
+
+def f7():
+    """contentの検索"""
+
+    word = "下人"
+
+    count = Article.objects.filter(content__contains=word).count()
+    qs = Article.objects.filter(content__contains=word)
+
+    print(f"検索結果:{count}件")
+    print("-" * 30)
+
+    for v in qs:
+        print(v.content)
+        print("-" * 30)
+
+
+def f8():
+    """titleとcontentの普通の検索"""
+
+    word = "下人"
+
+    # and 検索
+    qs = Article.objects.filter(title__contains=word, content__contains=word)
+    for v in qs:
+        print("タイトル：", v.title)
+        print("内容：", v.content)
+        print("-" * 30)
+
+    print("-" * 80)
+
+    # or 検索
+    qs = Article.objects.filter(
+        Q(title__contains=word) | Q(content__contains=word)
+    )
+    for v in qs:
+        print("タイトル：", v.title)
+        print("内容：", v.content)
+        print("-" * 30)
+
+
+def f9():
+    """titleとcontentのannotate,Concat検索"""
+
+    word = "下人"
+
+    qs = Article.objects.annotate(
+        search=Concat(
+            'title',
+            Value(' '),
+            'content',
+            output_field=TextField(),
+        )
+    ).filter(search__icontains=word)
+
+    for v in qs:
+        print("タイトル：", v.title)
+        print("内容：", v.content)
+        print("-" * 30)
+
+
+def f10():
+    """カテゴリから記事を抽出"""
+
+    o = Category.objects.all()
+    for v in o:
+        print(v)
+        print(v.article_set.all())
+        print("-" * 30)
+
+
+def f11():
+    """cat,tags,title,contentのannotate,Concat検索"""
+
+    word = "tag_10"
+
+    qs = Article.objects.annotate(
+        search=Concat(
+            'cat__name',
+            Value(' '),
+            'tags__name',
+            Value(' '),
+            'title',
+            Value(' '),
+            'content',
+            output_field=TextField(),
+        )
+    ).filter(search__icontains=word)
+
+    for v in qs:
+        print("id：", v.id)
+        print("カテゴリ：", v.cat)
+        print("タグ：", v.tags.all())
+        print("タイトル：", v.title)
+        print("内容：", v.content)
+        print("-" * 30)
+
+
+f11()

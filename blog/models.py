@@ -5,14 +5,14 @@ class Category(models.Model):
     name = models.CharField(max_length=255)
 
     def __str__(self):
-        return f"<{self.id}> {self.name}"
+        return self.name
 
 
 class Tag(models.Model):
     name = models.CharField(max_length=255)
 
     def __str__(self):
-        return f"<{self.id}> {self.name}"
+        return self.name
 
 
 class Article(models.Model):
@@ -26,4 +26,4 @@ class Article(models.Model):
     content = models.TextField(verbose_name="内容", blank=True, null=True)
 
     def __str__(self):
-        return f"<{self.id}> {self.title}"
+        return self.title
