@@ -51,3 +51,30 @@ http://127.0.0.1:8000/
 
 http://127.0.0.1:8000/admin/
 
+
+### アプリケーション作成
+
+blog という名
+
+```
+python manage.py startapp blog
+```
+
+モデル作成
+
+blog/models.py
+
+settings.py の INSTALLED_APPS にアプリを追加
+
+makemigrations, migrate
+```
+python manage.py makemigrations blog
+
+python manage.py migrate
+```
+
+作成したモデルを admin.py に admin.site.register する
+
+スーパーユーザーでログインして確かめる
+
+http://127.0.0.1:8000/admin/
