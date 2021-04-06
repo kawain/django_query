@@ -3,7 +3,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_query.settings")
 
 import django  # noqa
 from django.db.models.functions import Concat  # noqa
-from django.db.models import Count, TextField  # noqa
+from django.db.models import Count, TextField, CharField  # noqa
 from django.db.models import Q, Value  # noqa
 from tqdm import tqdm  # noqa
 import random  # noqa
@@ -245,4 +245,60 @@ def f11():
         print("-" * 30)
 
 
-f11()
+def f12():
+    """スペースキーワード対応"""
+
+    # 全角スペースと半角スペースを混ぜる（汚い入力の再現）
+    keyword = "　下人　死人 老婆       "
+    # keyword = "FORTRAN 屍骸 "
+    # keyword = "羅生門 "
+    # 入力された文字列の両端の空白を削除
+    keyword = keyword.strip()
+    # 入力された文字列の全角スペースを半角スペースに置換
+    keyword = keyword.replace("　", " ")
+    # 半角スペースで区切ってリスト化
+    keyword_list = keyword.split()
+    # リストの要素が0より大きいときだけ実行
+    if len(keyword_list) == 0:
+        return
+
+    # Q オブジェクトを作成して
+    q_object = Q()
+    # キーワード分（リストの長さ分）
+    for v in keyword_list:
+        # and でつなげる
+        q_object.add(Q(search__icontains=v), Q.AND)
+
+    # q_objectを見るとこのようになっている
+    # print(q_object)
+    # (AND: ('search__icontains', '下人'), ('search__icontains', '死人'), ('search__icontains', '老婆'))
+
+    # タグ以外用のクエリセット
+    qs = Article.objects.annotate(
+        search=Concat(
+            'cat__name',
+            Value(' '),
+            'title',
+            Value(' '),
+            'content',
+            output_field=TextField(),
+        )
+    ).filter(q_object)
+
+    # # タグ用のクエリセット
+    # q1 = Article.objects.filter(tags__name__in=keyword_list)
+
+    # # クエリセット合算
+    # qs = list(qs) + list(q1)
+    # qs = set(qs)
+
+    for v in qs:
+        print("id：", v.id)
+        print("カテゴリ：", v.cat)
+        print("タグ：", v.tags.all())
+        print("タイトル：", v.title)
+        print("内容：", v.content)
+        print("-" * 30)
+
+
+f12()
